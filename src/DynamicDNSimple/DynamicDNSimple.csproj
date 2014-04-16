@@ -35,20 +35,24 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="CoreTechs.Common">
+    <Reference Include="CoreTechs.Common, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\CoreTechs.Common.1.0.1\lib\net45\CoreTechs.Common.dll</HintPath>
     </Reference>
-    <Reference Include="DNSimple.Api">
+    <Reference Include="DNSimple.Api, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\DNSimple.0.4.2\lib\4.0\DNSimple.Api.dll</HintPath>
     </Reference>
-    <Reference Include="JsonFx">
+    <Reference Include="JsonFx, Version=2.0.1106.2610, Culture=neutral, PublicKeyToken=315052dd637f8a52, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\DNSimple.0.4.2\lib\4.0\JsonFx.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=4.0.5.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\DNSimple.0.4.2\lib\4.0\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="RestSharp">
+    <Reference Include="RestSharp, Version=102.5.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\DNSimple.0.4.2\lib\4.0\RestSharp.dll</HintPath>
     </Reference>
     <Reference Include="System" />
