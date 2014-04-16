@@ -69,8 +69,8 @@ namespace DynamicDNSimple
         {
             IRetryStrategy retryStrategy = new RetryStrategy
             {
-                MaxDuration = TimeSpan.FromMinutes(10),
-                FailureDelay = TimeSpan.FromSeconds(10),
+                MaxDuration = TimeSpan.FromMinutes(2),
+                FailureDelay = TimeSpan.FromSeconds(5),
             };
 
             return Attempt.Repeatedly.Get(factory).UsingStrategy(retryStrategy, default(CancellationToken))
