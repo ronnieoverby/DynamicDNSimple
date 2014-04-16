@@ -18,21 +18,13 @@ namespace DynamicDNSimple
 
             var dns = new DNSimpleRestClient(username, password);
 
-            var cts = new CancellationTokenSource();
-            IRetryStrategy retryStrategy = new RetryStrategy
-            {
-                MaxDuration = TimeSpan.FromMinutes(10),
-                FailureDelay = TimeSpan.FromSeconds(10),
-            };
-            dynamic[] recs =
-                Attempt.Repeatedly.Get(() => dns.ListRecords(domain)).UsingStrategy(retryStrategy, cts.Token)
-                    .ThrowIfCantSucceed()
-                    .GetValueOrDefault();
+
+            dynamic[] recs = GetWithRetry(() => dns.ListRecords(domain));
 
             var rec = recs.SingleOrDefault(x => x.record.name.Equals(recordName, StringComparison.OrdinalIgnoreCase));
             bool hasRecord = rec != null;
 
-            var newIp = GetNewIp();
+            var newIp = GetWithRetry(GetNewIp);
 
             if (hasRecord)
             {
@@ -44,11 +36,12 @@ namespace DynamicDNSimple
                 if (ipChanged.Dump("IP Changed"))
                 {
                     "Updating Record".Dump();
-                    dns.UpdateRecord(rec.domain_id,
-                        rec.id,
-                        recordName,
-                        newIp.ToString(),
-                        60);
+                    DoWithRetry(() =>
+                        dns.UpdateRecord(rec.domain_id,
+                            rec.id,
+                            recordName,
+                            newIp.ToString(),
+                            60));
                 }
             }
             else
@@ -56,14 +49,15 @@ namespace DynamicDNSimple
                 // add it
                 "Adding Record".Dump();
 
-                dns.AddRecord(domain,
-                    recordName,
-                    "A",
-                    newIp.ToString(),
-                    60);
+                DoWithRetry(() =>
+                    dns.AddRecord(domain,
+                        recordName,
+                        "A",
+                        newIp.ToString(),
+                        60));
             }
         }
-
+        
         static IPAddress GetNewIp()
         {
             var web = new WebClient();
@@ -71,6 +65,30 @@ namespace DynamicDNSimple
             var ip = IPAddress.Parse(s);
             return ip;
         }
+
+        private static T GetWithRetry<T>(Func<T> factory)
+        {
+            IRetryStrategy retryStrategy = new RetryStrategy
+            {
+                MaxDuration = TimeSpan.FromMinutes(10),
+                FailureDelay = TimeSpan.FromSeconds(10),
+            };
+
+            return Attempt.Repeatedly.Get(factory).UsingStrategy(retryStrategy, default(CancellationToken))
+                .ThrowIfCantSucceed()
+                .GetValueOrDefault();
+        }
+
+        private static void DoWithRetry(Action action)
+        {
+            GetWithRetry(() =>
+            {
+                action();
+                return true;
+            });
+        }
+
+ 
     }
 }
 
