@@ -1,23 +1,12 @@
-﻿using DNSimple;
+﻿using System.Threading;
+using CoreTechs.Common;
+using DNSimple;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Text;
 
 namespace DynamicDNSimple
 {
-    static class Extensions {
-        public static T Dump<T>(this T obj, string title = null)
-        {
-            if (string.IsNullOrWhiteSpace(title))
-                Console.WriteLine(obj);
-
-            else Console.WriteLine("{0}: {1}", title, obj);
-            return obj;
-        }
-    }
-
     class Program
     {
         static void Main(string[] args)
@@ -29,7 +18,17 @@ namespace DynamicDNSimple
 
             var dns = new DNSimpleRestClient(username, password);
 
-            dynamic[] recs = dns.ListRecords(domain);
+            var cts = new CancellationTokenSource();
+            IRetryStrategy retryStrategy = new RetryStrategy
+            {
+                MaxDuration = TimeSpan.FromMinutes(10),
+                FailureDelay = TimeSpan.FromSeconds(10),
+            };
+            dynamic[] recs =
+                Attempt.Repeatedly.Get(() => dns.ListRecords(domain)).UsingStrategy(retryStrategy, cts.Token)
+                    .ThrowIfCantSucceed()
+                    .GetValueOrDefault();
+
             var rec = recs.SingleOrDefault(x => x.record.name.Equals(recordName, StringComparison.OrdinalIgnoreCase));
             bool hasRecord = rec != null;
 
@@ -38,44 +37,40 @@ namespace DynamicDNSimple
             if (hasRecord)
             {
                 rec = rec.record;
-                string oldIp = rec.content.Trim();
-                var ipChanged = oldIp != newIp;
-
-                if (!ipChanged.Dump("IP Changed"))
-                    return;
+                var oldIp = IPAddress.Parse(rec.content.Trim());
+                bool ipChanged = !oldIp.Equals(newIp);
 
                 // update it if the ip address has changed
-                "Updating Record".Dump();
-                rec = dns.UpdateRecord(rec.domain_id,
-                    rec.id,
-                    recordName,
-                    newIp,
-                    60);
+                if (ipChanged.Dump("IP Changed"))
+                {
+                    "Updating Record".Dump();
+                    dns.UpdateRecord(rec.domain_id,
+                        rec.id,
+                        recordName,
+                        newIp.ToString(),
+                        60);
+                }
             }
             else
             {
                 // add it
                 "Adding Record".Dump();
 
-                rec = dns.AddRecord(domain,
+                dns.AddRecord(domain,
                     recordName,
                     "A",
-                    newIp,
+                    newIp.ToString(),
                     60);
             }
-
-
-            Console.ReadKey();
         }
 
-
-
-     static   string GetNewIp()
+        static IPAddress GetNewIp()
         {
-            return new WebClient().DownloadString("http://icanhazip.com").Trim();
+            var web = new WebClient();
+            var s = web.DownloadString("http://icanhazip.com").Trim();
+            var ip = IPAddress.Parse(s);
+            return ip;
         }
-
-
     }
 }
 
