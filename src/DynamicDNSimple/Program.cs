@@ -33,16 +33,15 @@ namespace DynamicDNSimple
                 bool ipChanged = !oldIp.Equals(newIp);
 
                 // update it if the ip address has changed
-                if (ipChanged.Dump("IP Changed"))
-                {
-                    "Updating Record".Dump();
-                    DoWithRetry(() =>
-                        dns.UpdateRecord(rec.domain_id,
-                            rec.id,
-                            recordName,
-                            newIp.ToString(),
-                            60));
-                }
+                if (!ipChanged.Dump("IP Changed")) return;
+
+                "Updating Record".Dump();
+                DoWithRetry(() =>
+                    dns.UpdateRecord(rec.domain_id,
+                        rec.id,
+                        recordName,
+                        newIp.ToString(),
+                        60));
             }
             else
             {
